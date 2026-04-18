@@ -27,7 +27,7 @@ runs:
       set -ex
 
       SUDO=
-      if [[ "${INPUT_USE_SUDO}" == "true" ]] && command -v sudo >/dev/null; then
+      if [[ "$INPUT_USE_SUDO" == "true" ]] && command -v sudo >/dev/null; then
         SUDO=sudo
       fi
 
@@ -35,7 +35,7 @@ runs:
       # - if version is "tip", install from tip of main.
       # - if version is "latest-release", look up latest release.
       # - otherwise, install the specified version.
-      case "${INPUT_VERSION}" in
+      case "$INPUT_VERSION" in
       tip)
         echo "Installing ko using go install"
         go install github.com/google/ko@main
@@ -44,11 +44,11 @@ runs:
         tag=$(curl -L -s -u "username:${GITHUB_TOKEN}" https://api.github.com/repos/ko-build/ko/releases/latest | jq -r '.tag_name')
         ;;
       *)
-        tag="${INPUT_VERSION}"
+        tag="$INPUT_VERSION"
       esac
 
-      os="${RUNNER_OS}"
-      arch=$(echo "${RUNNER_ARCH}" | tr '[:upper:]' '[:lower:]')
+      os="$RUNNER_OS"
+      arch=$(echo "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')
       if [[ $os == "macOS" ]]; then
         os="Darwin"
       fi
@@ -63,15 +63,15 @@ runs:
       if [[ ! -z ${KO_DOCKER_REPO} ]]; then
         echo "KO_DOCKER_REPO is already set"
         echo "Skipping login to ghcr.io and passing KO_DOCKER_REPO=${KO_DOCKER_REPO} on to future steps"
-        echo "KO_DOCKER_REPO=${KO_DOCKER_REPO}" >> $GITHUB_ENV
+        echo "KO_DOCKER_REPO=${KO_DOCKER_REPO}" >> "$GITHUB_ENV"
       else
         # NB: username doesn't seem to matter.
         echo "${GITHUB_TOKEN}" | ko login ghcr.io --username "dummy" --password-stdin
 
         # Set KO_DOCKER_REPO for future steps.
         # We need to get the repository name in lowercase, otherwise it could fail
-        repo=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
-        safe_repo=$(printf '%s' "${repo}" | tr -d '\n\r')
+        repo=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
+        safe_repo=$(printf '%s' "$repo" | tr -d '\n\r')
         echo "KO_DOCKER_REPO=ghcr.io/${safe_repo}"
         echo "KO_DOCKER_REPO=ghcr.io/${safe_repo}" >> "$GITHUB_ENV"
       fi
