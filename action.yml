@@ -8,17 +8,12 @@ inputs:
     description: 'Version of ko to install (tip, latest-release, v0.14.1, etc.)'
     required: true
     default: 'latest-release'
-  use-sudo:
-    description: 'set to true if install-dir location requires sudo privs'
-    required: false
-    default: 'false'
 runs:
   using: "composite"
   steps:
   - shell: bash
     env:
-      INPUT_USE_SUDO: ${{ inputs.use-sudo }}
-      INPUT_VERSION: ${{ inputs.version }}
+      KO_VERSION: ${{ inputs.version }}
       GITHUB_TOKEN: ${{ github.token }}
       RUNNER_OS: ${{ runner.os }}
       RUNNER_ARCH: ${{ runner.arch }}
@@ -26,16 +21,11 @@ runs:
     run: |
       set -ex
 
-      SUDO=
-      if [[ "$INPUT_USE_SUDO" == "true" ]] && command -v sudo >/dev/null; then
-        SUDO=sudo
-      fi
-
       # Install ko:
       # - if version is "tip", install from tip of main.
       # - if version is "latest-release", look up latest release.
       # - otherwise, install the specified version.
-      case "$INPUT_VERSION" in
+      case $KO_VERSION in
       tip)
         echo "Installing ko using go install"
         go install github.com/google/ko@main
@@ -44,10 +34,10 @@ runs:
         tag=$(curl -L -s -u "username:${GITHUB_TOKEN}" https://api.github.com/repos/ko-build/ko/releases/latest | jq -r '.tag_name')
         ;;
       *)
-        tag="$INPUT_VERSION"
+        tag="$KO_VERSION"
       esac
 
-      os="$RUNNER_OS"
+      os=$RUNNER_OS
       arch=$(echo "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')
       if [[ $os == "macOS" ]]; then
         os="Darwin"
@@ -57,21 +47,20 @@ runs:
       fi
       if [[ ! -z ${tag} ]]; then
         echo "Installing ko @ ${tag} for ${os} ${arch}"
-        curl -fsL https://github.com/ko-build/ko/releases/download/${tag}/ko_${tag:1}_${os}_${arch}.tar.gz | $SUDO tar xzf - -C /usr/local/bin ko
+        curl -fsL https://github.com/ko-build/ko/releases/download/${tag}/ko_${tag:1}_${os}_${arch}.tar.gz | tar xzf - -C /usr/local/bin ko
       fi
 
       if [[ ! -z ${KO_DOCKER_REPO} ]]; then
         echo "KO_DOCKER_REPO is already set"
         echo "Skipping login to ghcr.io and passing KO_DOCKER_REPO=${KO_DOCKER_REPO} on to future steps"
-        echo "KO_DOCKER_REPO=${KO_DOCKER_REPO}" >> "$GITHUB_ENV"
+        echo "KO_DOCKER_REPO=${KO_DOCKER_REPO}" >> $GITHUB_ENV
       else
         # NB: username doesn't seem to matter.
         echo "${GITHUB_TOKEN}" | ko login ghcr.io --username "dummy" --password-stdin
 
         # Set KO_DOCKER_REPO for future steps.
         # We need to get the repository name in lowercase, otherwise it could fail
-        repo=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
-        safe_repo=$(printf '%s' "$repo" | tr -d '\n\r')
-        echo "KO_DOCKER_REPO=ghcr.io/${safe_repo}"
-        echo "KO_DOCKER_REPO=ghcr.io/${safe_repo}" >> "$GITHUB_ENV"
+        repo=$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]' | tr -d '\n\r')
+        echo "KO_DOCKER_REPO=ghcr.io/${repo}"
+        echo "KO_DOCKER_REPO=ghcr.io/${repo}" >> $GITHUB_ENV
       fi
