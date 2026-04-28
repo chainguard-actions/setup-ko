@@ -12,26 +12,23 @@ Action **ko-build--setup-ko/v0.8** was hardened automatically. 4 finding(s) were
 
 ### script-injection (severity: high)
 
-The run: block in action.yml directly interpolates attacker-controlled expressions inside shell command strings without first assigning them to environment variables. Specifically: `${{ inputs.version }}` is used directly in a `case` statement (line 22) and as a tag value (line 31); `${{ github.token }}` is interpolated into a curl -u argument (line 28) and echoed into a pipe (line 52); `${{ runner.os }}` and `${{ runner.arch }}` are interpolated directly (lines 34–35); and `${{ github.repository }}` is interpolated into a subshell (line 55). All of these should be passed via env: variables and referenced as $ENV_VAR in the shell.
+The single `run:` step in action.yml directly interpolates attacker-controlled expressions into the shell command string without first assigning them to environment variables. Specifically: `${{ inputs.version }}` is used in a `case` statement (line 22) and as a tag value (line 31); `${{ github.token }}` is interpolated into a curl `-u` argument (line 28) and piped to `ko login` (line 53); and `${{ github.repository }}` is interpolated into a command substitution (line 57). An attacker who controls these values (e.g. via a crafted version input or a forked PR) can inject arbitrary shell commands.
 
 Locations:
 
 - `action.yml:22`
 - `action.yml:28`
 - `action.yml:31`
-- `action.yml:34`
-- `action.yml:35`
-- `action.yml:52`
-- `action.yml:55`
+- `action.yml:53`
+- `action.yml:57`
 
 ### github-env-injection (severity: high)
 
-The run: block writes a value derived from the attacker-controlled expression `${{ github.repository }}` to $GITHUB_ENV without sanitization. On line 55, `${{ github.repository }}` is interpolated into a shell variable `repo` via subshell, and on line 57 that variable is written to $GITHUB_ENV with `echo "KO_DOCKER_REPO=ghcr.io/${repo}" >> $GITHUB_ENV`. A repository name containing newline characters could inject arbitrary environment variables into subsequent steps. The required sanitization step (`printf '%s' "$VAR" | tr -d '\n\r'`) is absent.
+The `run:` step writes `repo` (derived from `${{ github.repository }}`, an attacker-controlled value) to `$GITHUB_ENV` at line 59 (`echo "KO_DOCKER_REPO=ghcr.io/${repo}" >> $GITHUB_ENV`) without first sanitizing the value with `printf '%s' ... | tr -d '\n\r'`. A malicious repository name containing newlines could inject arbitrary environment variables or override existing ones for subsequent steps.
 
 Locations:
 
-- `action.yml:55`
-- `action.yml:57`
+- `action.yml:59`
 
 ### static-inline-injection (severity: high)
 
@@ -57,5 +54,5 @@ Locations:
 
 **Notes:**
 
-Rewrote action.yml to move all ${{ }} expressions out of the run: block into an env: block. Specifically: inputs.version → KO_VERSION, github.token → GITHUB_TOKEN, runner.os → RUNNER_OS, runner.arch → RUNNER_ARCH, github.repository → GITHUB_REPOSITORY. All shell references updated to use the corresponding $ENV_VAR names. For the github-env-injection finding, the repo variable derivation now uses `printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]' | tr -d '\n\r'` to strip newlines before writing to $GITHUB_ENV.
+Moved all ${{ }} expressions (${{ inputs.version }}, ${{ github.token }}, ${{ github.repository }}, ${{ runner.os }}, ${{ runner.arch }}) from the run: block into an env: block (as KO_VERSION, GITHUB_TOKEN, GITHUB_REPOSITORY, RUNNER_OS, RUNNER_ARCH). Updated the shell script to reference these as plain environment variables. For the github-env-injection finding, sanitized the repo value using `printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]' | tr -d '\n\r'` before writing to $GITHUB_ENV to prevent newline injection.
 

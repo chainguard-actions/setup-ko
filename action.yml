@@ -15,9 +15,9 @@ runs:
     env:
       KO_VERSION: ${{ inputs.version }}
       GITHUB_TOKEN: ${{ github.token }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
       RUNNER_OS: ${{ runner.os }}
       RUNNER_ARCH: ${{ runner.arch }}
-      GITHUB_REPOSITORY: ${{ github.repository }}
     run: |
       set -ex
 
@@ -25,7 +25,7 @@ runs:
       # - if version is "tip", install from tip of main.
       # - if version is "latest-release", look up latest release.
       # - otherwise, install the specified version.
-      case $KO_VERSION in
+      case "$KO_VERSION" in
       tip)
         echo "Installing ko using go install"
         go install github.com/google/ko@main
@@ -37,7 +37,7 @@ runs:
         tag="$KO_VERSION"
       esac
 
-      os=$RUNNER_OS
+      os="$RUNNER_OS"
       arch=$(echo "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')
       if [[ $os == "macOS" ]]; then
         os="Darwin"
@@ -53,7 +53,7 @@ runs:
       if [[ ! -z ${KO_DOCKER_REPO} ]]; then
         echo "KO_DOCKER_REPO is already set"
         echo "Skipping login to ghcr.io and passing KO_DOCKER_REPO=${KO_DOCKER_REPO} on to future steps"
-        echo "KO_DOCKER_REPO=${KO_DOCKER_REPO}" >> $GITHUB_ENV
+        echo "KO_DOCKER_REPO=${KO_DOCKER_REPO}" >> "$GITHUB_ENV"
       else
         # NB: username doesn't seem to matter.
         echo "${GITHUB_TOKEN}" | ko login ghcr.io --username "dummy" --password-stdin
@@ -62,5 +62,5 @@ runs:
         # We need to get the repository name in lowercase, otherwise it could fail
         repo=$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]' | tr -d '\n\r')
         echo "KO_DOCKER_REPO=ghcr.io/${repo}"
-        echo "KO_DOCKER_REPO=ghcr.io/${repo}" >> $GITHUB_ENV
+        echo "KO_DOCKER_REPO=ghcr.io/${repo}" >> "$GITHUB_ENV"
       fi
