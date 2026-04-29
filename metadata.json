@@ -1,6 +1,5 @@
 {
   "owner": "ko-build",
   "name": "setup-ko",
-  "visibility": "internal",
-  "description": "Install and authorize ko"
+  "visibility": "public"
 }

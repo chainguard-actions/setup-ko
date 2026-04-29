@@ -1,7 +1,5 @@
 # ko-build/setup-ko
 
-Install and authorize ko
-
 Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/ko-build/setup-ko](https://github.com/ko-build/setup-ko).
 
 ## Versions
