@@ -1,5 +1,6 @@
 {
   "owner": "ko-build",
   "name": "setup-ko",
-  "visibility": "public"
+  "visibility": "public",
+  "block_publish": false
 }
