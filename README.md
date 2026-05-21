@@ -6,8 +6,8 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
-| v0.8 | [`v0.8`](https://github.com/chainguard-actions/setup-ko/tree/v0.8) | — |
-| v0.9 | [`v0.9`](https://github.com/chainguard-actions/setup-ko/tree/v0.9) | — |
+| v0.8 | [`v0.8`](https://github.com/chainguard-actions/ko-build--setup-ko/tree/v0.8) | — |
+| v0.9 | [`v0.9`](https://github.com/chainguard-actions/ko-build--setup-ko/tree/v0.9) | — |
 
 ## Privacy
 
